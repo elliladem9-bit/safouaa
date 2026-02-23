@@ -420,3 +420,57 @@ exports.getUserEnrollment = async (req, res, next) => {
     next(error);
   }
 };
+
+// @desc    Get all user's enrollments
+// @route   GET /api/enrollments/my-enrollments
+// @access  Private
+exports.getMyEnrollments = async (req, res, next) => {
+  try {
+    const enrollments = await Enrollment.find({
+      student: req.user._id
+    })
+      .populate('course', 'title description thumbnail instructor category level')
+      .populate('completedLessons.lesson', 'title')
+      .sort({ enrolledAt: -1 });
+
+    res.status(200).json({
+      success: true,
+      count: enrollments.length,
+      data: enrollments
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Get teacher's courses
+// @route   GET /api/courses/my-courses
+// @access  Private (Teacher)
+exports.getMyCourses = async (req, res, next) => {
+  try {
+    const courses = await Course.find({
+      instructor: req.user._id
+    })
+      .populate('instructor', 'name email profilePicture')
+      .sort({ createdAt: -1 });
+
+    // Get enrollment count for each course
+    const coursesWithStats = await Promise.all(
+      courses.map(async (course) => {
+        const enrolledStudents = await Enrollment.countDocuments({ course: course._id });
+        return {
+          ...course.toObject(),
+          enrolledStudents
+        };
+      })
+    );
+
+    res.status(200).json({
+      success: true,
+      count: coursesWithStats.length,
+      data: coursesWithStats
+    });
+  } catch (error) {
+    next(error);
+  }
+};

@@ -11,7 +11,9 @@ const {
   uploadCourseThumbnail,
   getTeacherStudents,
   getCourseAnalytics,
-  getUserEnrollment
+  getUserEnrollment,
+  getMyEnrollments,
+  getMyCourses
 } = require('../controllers/courseController');
 const { protect, authorize, checkTeacherApproved } = require('../middleware/auth');
 const { courseValidation, validate, idValidation } = require('../middleware/validation');
@@ -19,8 +21,10 @@ const { uploadImage } = require('../middleware/upload');
 
 // Teacher-specific routes
 router.get('/teacher/students', protect, authorize('teacher', 'admin'), checkTeacherApproved, getTeacherStudents);
+router.get('/my-courses', protect, authorize('teacher', 'admin'), getMyCourses);
 
 // Enrollment routes
+router.get('/enrollments/my-enrollments', protect, getMyEnrollments);
 router.get('/enrollments/course/:courseId', protect, getUserEnrollment);
 
 // Public routes

@@ -38,6 +38,78 @@ exports.getSurah = async (req, res, next) => {
   }
 };
 
+// @desc    Get single surah by number with ayahs from API
+// @route   GET /api/quran/surah/:number
+// @access  Public
+exports.getSurahByNumber = async (req, res, next) => {
+  try {
+    const axios = require('axios');
+    const surahNumber = parseInt(req.params.number);
+    
+    // Get surah info from database
+    let surah = await Surah.findOne({ number: surahNumber });
+    
+    if (!surah) {
+      return res.status(404).json({ success: false, message: 'Surah not found' });
+    }
+
+    // Check if ayahs are already cached
+    if (surah.ayahs && surah.ayahs.length > 0) {
+      return res.status(200).json({
+        success: true,
+        data: surah
+      });
+    }
+
+    // Fetch from external API
+    try {
+      // Fetch Arabic text (Uthmani script)
+      const arabicResponse = await axios.get(`https://api.alquran.cloud/v1/surah/${surahNumber}/quran-uthmani`);
+      
+      // Fetch English translation
+      const translationResponse = await axios.get(`https://api.alquran.cloud/v1/surah/${surahNumber}/en.sahih`);
+      
+      // Fetch audio (Sheikh Alafasy)
+      const audioResponse = await axios.get(`https://api.alquran.cloud/v1/surah/${surahNumber}/ar.alafasy`);
+      
+      if (arabicResponse.data.data && translationResponse.data.data && audioResponse.data.data) {
+        const arabicAyahs = arabicResponse.data.data.ayahs;
+        const translationAyahs = translationResponse.data.data.ayahs;
+        const audioAyahs = audioResponse.data.data.ayahs;
+        
+        const ayahs = arabicAyahs.map((ayah, index) => ({
+          number: ayah.numberInSurah,
+          text: ayah.text,
+          translation: translationAyahs[index]?.text || '',
+          audioUrl: audioAyahs[index]?.audio || ''
+        }));
+        
+        // Cache ayahs in database
+        surah.ayahs = ayahs;
+        await surah.save();
+        
+        return res.status(200).json({
+          success: true,
+          data: surah
+        });
+      }
+    } catch (apiError) {
+      console.error('Error fetching from Quran API:', apiError.message);
+      return res.status(500).json({ 
+        success: false, 
+        message: 'Failed to fetch Quran verses from external API' 
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      data: surah
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 // @desc    Submit recitation
 // @route   POST /api/quran/recitation/submit
 // @access  Private

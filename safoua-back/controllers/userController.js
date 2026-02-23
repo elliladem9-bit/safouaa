@@ -1,5 +1,5 @@
 const User = require('../models/User');
-const cloudinary = require('../config/cloudinary');
+const { saveFile } = require('../config/localStorage');
 const logger = require('../utils/logger');
 
 // @desc    Get user profile
@@ -25,11 +25,34 @@ exports.getProfile = async (req, res, next) => {
 // @access  Private
 exports.updateProfile = async (req, res, next) => {
   try {
-    const { name, bio } = req.body;
+    const { name, email, bio, profilePicture, qualifications, teachingExperience } = req.body;
+
+    const updateData = { name, bio };
+    
+    // Only update email if it's different
+    if (email && email !== req.user.email) {
+      // Check if email is already taken
+      const existingUser = await User.findOne({ email, _id: { $ne: req.user._id } });
+      if (existingUser) {
+        return res.status(400).json({ success: false, message: 'Email already in use' });
+      }
+      updateData.email = email;
+    }
+
+    // Add profile picture if provided
+    if (profilePicture) {
+      updateData.profilePicture = profilePicture;
+    }
+
+    // Add teacher-specific fields if user is a teacher
+    if (req.user.role === 'teacher') {
+      if (qualifications !== undefined) updateData.qualifications = qualifications;
+      if (teachingExperience !== undefined) updateData.teachingExperience = teachingExperience;
+    }
 
     const user = await User.findByIdAndUpdate(
       req.user._id,
-      { name, bio },
+      updateData,
       { new: true, runValidators: true }
     );
 
@@ -59,7 +82,7 @@ exports.deleteAccount = async (req, res, next) => {
 };
 
 // @desc    Upload profile picture
-// @route   POST /api/users/profile-picture
+// @route   POST /api/users/upload-profile-picture
 // @access  Private
 exports.uploadProfilePicture = async (req, res, next) => {
   try {
@@ -67,28 +90,12 @@ exports.uploadProfilePicture = async (req, res, next) => {
       return res.status(400).json({ success: false, message: 'Please upload an image' });
     }
 
-    // Upload to cloudinary
-    const result = await new Promise((resolve, reject) => {
-      const uploadStream = cloudinary.uploader.upload_stream(
-        { folder: 'profile-pictures', resource_type: 'image' },
-        (error, result) => {
-          if (error) reject(error);
-          else resolve(result);
-        }
-      );
-      uploadStream.end(req.file.buffer);
-    });
-
-    // Update user
-    const user = await User.findByIdAndUpdate(
-      req.user._id,
-      { profilePicture: result.secure_url },
-      { new: true }
-    );
+    // Save file locally
+    const result = await saveFile(req.file, 'profile-pictures');
 
     res.status(200).json({
       success: true,
-      data: { profilePicture: user.profilePicture }
+      data: { url: result.secure_url }
     });
   } catch (error) {
     next(error);

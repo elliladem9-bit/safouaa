@@ -3,6 +3,7 @@ const router = express.Router();
 const {
   getSurahs,
   getSurah,
+  getSurahByNumber,
   submitRecitation,
   getRecitationSubmissions,
   reviewRecitation,
@@ -13,6 +14,7 @@ const { uploadAudio } = require('../middleware/upload');
 
 router.get('/surahs', getSurahs);
 router.get('/surahs/:id', getSurah);
+router.get('/surah/:number', getSurahByNumber);
 router.post('/recitation/submit', protect, uploadAudio, submitRecitation);
 router.get('/recitation/submissions', protect, getRecitationSubmissions);
 router.put('/recitation/:id/review', protect, authorize('teacher', 'admin'), reviewRecitation);

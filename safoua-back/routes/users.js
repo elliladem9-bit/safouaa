@@ -7,11 +7,12 @@ const {
   uploadProfilePicture
 } = require('../controllers/userController');
 const { protect } = require('../middleware/auth');
-const { uploadImage } = require('../middleware/upload');
+const { uploadProfilePicture: uploadProfilePictureMiddleware } = require('../middleware/upload');
 
 router.get('/profile', protect, getProfile);
 router.put('/profile', protect, updateProfile);
 router.delete('/account', protect, deleteAccount);
-router.post('/profile-picture', protect, uploadImage, uploadProfilePicture);
+router.post('/profile-picture', protect, uploadProfilePictureMiddleware, uploadProfilePicture);
+router.post('/upload-profile-picture', protect, uploadProfilePictureMiddleware, uploadProfilePicture);
 
 module.exports = router;

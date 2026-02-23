@@ -105,6 +105,21 @@ exports.uploadAny = multer({
   fileFilter
 }).single('file');
 
+exports.uploadProfilePicture = multer({
+  storage,
+  limits: {
+    fileSize: 5 * 1024 * 1024 // 5MB for profile pictures
+  },
+  fileFilter: (req, file, cb) => {
+    const extname = path.extname(file.originalname).toLowerCase().slice(1);
+    if (/jpeg|jpg|png|gif|webp/.test(extname)) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only image files are allowed'));
+    }
+  }
+}).single('file');
+
 exports.uploadMultiple = multer({
   storage,
   limits: {

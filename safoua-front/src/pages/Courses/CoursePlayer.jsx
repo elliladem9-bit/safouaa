@@ -223,7 +223,7 @@ const CoursePlayer = () => {
     );
   }
 
-  if (!course || !currentLesson) {
+  if (!course) {
     return (
       <div className="min-h-screen bg-gray-900 flex items-center justify-center">
         <div className="text-center text-white">
@@ -234,6 +234,34 @@ const CoursePlayer = () => {
           >
             Back to Courses
           </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (!currentLesson && lessons.length === 0) {
+    return (
+      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
+        <div className="text-center text-white max-w-md">
+          <FaBook className="w-16 h-16 text-gray-500 mx-auto mb-4" />
+          <h2 className="text-2xl font-bold mb-2">No Lessons Available</h2>
+          <p className="text-gray-400 mb-6">
+            This course doesn't have any lessons yet. The instructor is still preparing the content.
+          </p>
+          <div className="flex gap-4 justify-center">
+            <button
+              onClick={() => navigate(`/courses/${courseId}`)}
+              className="bg-gray-700 text-white px-6 py-2 rounded-lg hover:bg-gray-600 transition"
+            >
+              Course Details
+            </button>
+            <button
+              onClick={() => navigate('/courses')}
+              className="bg-primary-600 text-white px-6 py-2 rounded-lg hover:bg-primary-700 transition"
+            >
+              Back to Courses
+            </button>
+          </div>
         </div>
       </div>
     );
